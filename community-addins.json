@@ -1,0 +1,11 @@
+[
+  {
+    "id": "abbreviations",
+    "name": "Abbreviations",
+    "author": "Markooj",
+    "description": "List the abbreviations defined in a document",
+    "repo": "datakeen/markooj-addin-template",
+    "category": "writing",
+    "tags": ["abbreviations", "acronyms", "glossary"]
+  }
+]

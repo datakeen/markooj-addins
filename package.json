@@ -1,0 +1,22 @@
+{
+  "name": "markooj-addins",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The list of community add-ins for Markooj, and the tools that check it and build index.json.",
+  "license": "AGPL-3.0-or-later",
+  "author": "Ahmed Bilal",
+  "homepage": "https://github.com/datakeen/markooj-addins",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datakeen/markooj-addins.git"
+  },
+  "scripts": {
+    "validate": "node tools/validate.js",
+    "validate:remote": "node tools/validate.js --remote",
+    "build-index": "node tools/build-index.js",
+    "test": "node tools/test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

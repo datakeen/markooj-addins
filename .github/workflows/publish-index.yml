@@ -1,0 +1,73 @@
+# Builds index.json, the one file Markooj reads for File > Add-ins > Browse, and uploads it to the GitHub release
+# with the tag "index":
+#   https://github.com/datakeen/markooj-addins/releases/download/index/index.json
+# Runs when the list changes on main, once a day (to pick up new add-in releases), and by hand from the Actions tab.
+# The release is created when it does not exist yet, index.json is replaced, and the release is never marked "Latest".
+name: Publish index
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'community-addins.json'
+      - 'schema/**'
+      - 'tools/**'
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-index
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the files
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test the tools and check the list
+        run: |
+          node tools/test.js
+          # A problem in one entry is shown here but does not stop the index: build-index.js leaves that entry out (or
+          # keeps its last good version), so every other add-in still gets its updates.
+          node tools/validate.js || echo "::warning::community-addins.json has problems (listed above). Those entries are left out of index.json or kept at their last good version."
+
+      - name: Get the index that is online now
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p previous
+          gh release download index --pattern index.json --dir previous --clobber || echo "No index online yet."
+
+      - name: Build index.json
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node tools/build-index.js --previous previous/index.json --out dist/index.json --report dist/build-report.md
+
+      - name: Publish to the "index" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if ! gh release view index >/dev/null 2>&1; then
+            gh release create index \
+              --title "Add-in index" \
+              --notes "The list of Markooj add-ins, built automatically from community-addins.json and each add-in's latest release. Markooj reads index.json from here for File > Add-ins > Browse. The list is CC0 (public domain)." \
+              --target "${GITHUB_SHA}" \
+              --latest=false
+          fi
+          gh release upload index dist/index.json --clobber
+          gh release edit index --latest=false
+          echo "Published:" && ls -l dist

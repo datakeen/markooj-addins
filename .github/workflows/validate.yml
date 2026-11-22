@@ -1,0 +1,84 @@
+# Checks a pull request that adds or changes an entry in community-addins.json: the entry itself and the latest
+# GitHub release of the add-in (manifest.json, main.js, sizes, id). The result is posted as a comment on the pull
+# request and shown in the run's summary.
+#
+# Safety: this uses pull_request_target so it can comment on pull requests from forks. It therefore never runs
+# code from the pull request: the tools come from the base branch, and the proposed community-addins.json is read
+# as data only. main.js of the add-in is compiled to find syntax errors, never run.
+name: Check submission
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'community-addins.json'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the registry tools from the base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Get the proposed list (as data only)
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "refs/pull/${PR}/head"
+          git show FETCH_HEAD:community-addins.json > "$RUNNER_TEMP/proposed.json"
+          gh pr view "$PR" --json files --jq '.files[].path' > "$RUNNER_TEMP/changed.txt" || true
+
+      - name: Check the new and changed entries and their releases
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          node tools/validate.js "$RUNNER_TEMP/proposed.json" --remote --base community-addins.json --report "$RUNNER_TEMP/report.md"
+          status=$?
+          if grep -qvx 'community-addins.json' "$RUNNER_TEMP/changed.txt"; then
+            {
+              echo
+              echo "**Note:** this pull request also changes other files. Submissions should change only community-addins.json; a maintainer will look at the rest."
+            } >> "$RUNNER_TEMP/report.md"
+          fi
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Post the result on the pull request
+        if: always() && steps.check.outcome != 'skipped'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR" --body-file "$RUNNER_TEMP/report.md" --edit-last \
+            || gh pr comment "$PR" --body-file "$RUNNER_TEMP/report.md"
+
+      - name: Pass or fail
+        env:
+          STATUS: ${{ steps.check.outputs.status }}
+        run: |
+          if [ "$STATUS" != "0" ]; then
+            echo "The check found problems. They are listed in the comment on the pull request and in the summary of this run."
+            exit 1
+          fi

@@ -1,0 +1,31 @@
+# Runs the registry's own tests (no network) when the tools or schemas change.
+name: Test tools
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/**'
+      - 'schema/**'
+      - 'package.json'
+  pull_request:
+    paths:
+      - 'tools/**'
+      - 'schema/**'
+      - 'package.json'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test
+        run: |
+          node tools/test.js
+          node tools/validate.js

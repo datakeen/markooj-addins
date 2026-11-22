@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/datakeen/markooj-addins/main/schema/community-addins.schema.json",
+  "title": "Markooj community add-ins",
+  "description": "The list of add-ins that Markooj shows in File > Add-ins > Browse. One entry per add-in; add yours with a pull request.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "name", "author", "description", "repo", "category", "tags"],
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 40,
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+        "description": "3 to 40 lowercase letters, digits and single hyphens, such as word-count. It must equal the id in the add-in's manifest.json."
+      },
+      "name": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 50,
+        "pattern": "^[^\\r\\n\\t]+$",
+        "description": "The name shown on the add-in's card, on one line."
+      },
+      "author": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80,
+        "pattern": "^[^\\r\\n\\t]+$",
+        "description": "Your name or your team's name, on one line."
+      },
+      "description": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 250,
+        "pattern": "^[^\\r\\n\\t]+$",
+        "description": "One sentence about what the add-in does, on one line, at most 250 characters."
+      },
+      "repo": {
+        "type": "string",
+        "maxLength": 140,
+        "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})/[A-Za-z0-9._-]{1,100}$",
+        "description": "The GitHub repository as owner/name, such as datakeen/markooj-addin-template."
+      },
+      "category": {
+        "type": "string",
+        "enum": ["writing", "research", "math", "languages", "export", "productivity", "developer", "fun", "other"],
+        "description": "One of: writing, research, math, languages, export, productivity, developer, fun, other."
+      },
+      "tags": {
+        "type": "array",
+        "maxItems": 10,
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 30,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Lowercase words for search, such as citations or word-count."
+        },
+        "description": "Up to 10 lowercase search words."
+      }
+    }
+  }
+}
