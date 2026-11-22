@@ -120,6 +120,12 @@ tag `index`:
 - An add-in whose newest release has a problem keeps its last good version in the index; a new add-in with a problem
   is left out until it is fixed.
 
+## Questions
+
+Need help with an add-in, want yours in the store, or found an add-in that misbehaves? Open an
+[issue](https://github.com/datakeen/markooj-addins/issues), or [send a message](https://tally.so/r/Dq7D5p?from=addins-readme).
+It is a short form, and you will get a reply.
+
 ## License
 
 The tools and workflows in this repository are licensed under the GNU Affero General Public License, version 3 or
